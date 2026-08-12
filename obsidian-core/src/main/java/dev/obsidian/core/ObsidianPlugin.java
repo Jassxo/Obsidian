@@ -106,6 +106,9 @@ public final class ObsidianPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         ObsidianApiProvider.unregister();
+        if (checkManager != null) {
+            checkManager.shutdown();
+        }
         if (ledger != null) {
             ledger.shutdown();
         }

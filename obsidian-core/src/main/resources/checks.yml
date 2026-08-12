@@ -147,3 +147,22 @@ checks:
     sigma-floor-ms: 30
     autocorrelation-threshold: 0.9
     max-interval-ms: 1500
+
+  # Machine-learning layer. It scores a window of combat with the logistic model
+  # (model.dat) and adds ONE corroborating signal when the score clears the
+  # threshold. It never convicts alone: experimental, low weight, and it stands
+  # down during lag/ping instability like every other check.
+  ml:
+    enabled: true
+    experimental: true
+    likelihood-ratio: 1.6
+    # Cheat probability at or above which the model contributes a signal.
+    threshold: 0.85
+    # Combat actions (attacks) that make up one scored window.
+    window-actions: 40
+    # Feature thresholds, kept in step with the deterministic checks.
+    angle-violation-threshold: 65.0
+    reach-slop: 0.1
+    # Write each scored window to dataset.csv for retraining. Off by default;
+    # turn on, collect labelled data with /ob label, then retrain (see README).
+    dataset-logging: false

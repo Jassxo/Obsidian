@@ -95,8 +95,15 @@ public final class PlayerData {
     public volatile boolean exemptGameMode;
     public volatile boolean exemptWorld;
 
-    /** Confidence bonus contributed by external anticheats (Grim bridge), capped in config. */
+    /** Confidence bonus contributed by external anticheats (Grim/TotemGuard bridge), capped in config. */
     public volatile double externalBonus;
+
+    /**
+     * Staff-assigned label for ML dataset collection ("cheat"/"legit"), or null.
+     * Set by {@code /ob label}; stamped onto logged feature vectors so the
+     * offline trainer has ground truth. Purely for data collection.
+     */
+    public volatile String datasetLabel;
 
     /** Per-check state slots; each check owns one index, allocated once per player. */
     private final Object[] checkState;

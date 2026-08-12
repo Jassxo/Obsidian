@@ -14,6 +14,7 @@ import dev.obsidian.core.check.impl.PlaceBreakCycleCheck;
 import dev.obsidian.core.check.impl.ReachCheck;
 import dev.obsidian.core.check.impl.SnapRotationCheck;
 import dev.obsidian.core.check.impl.SpawnReactionCheck;
+import dev.obsidian.core.ml.MlCheck;
 import dev.obsidian.core.tracker.ActionRecord;
 import dev.obsidian.core.tracker.PlayerData;
 
@@ -28,9 +29,11 @@ public final class CheckManager {
 
     private final ObsidianPlugin plugin;
     private final Check[] checks;
+    private final MlCheck mlCheck;
 
     public CheckManager(ObsidianPlugin plugin) {
         this.plugin = plugin;
+        this.mlCheck = new MlCheck(plugin);
         this.checks = new Check[]{
                 // crystal PvP (v1)
                 new SpawnReactionCheck(),
@@ -46,7 +49,9 @@ public final class CheckManager {
                 new MultiAuraCheck(),
                 new AttackConsistencyCheck(),
                 new AimSnapCheck(),
-                new MaceSmashCheck()
+                new MaceSmashCheck(),
+                // corroborating machine-learning layer (v2)
+                mlCheck
         };
         for (int i = 0; i < checks.length; i++) {
             checks[i].wire(plugin.engine(), i);
@@ -65,6 +70,14 @@ public final class CheckManager {
 
     public List<Check> all() {
         return List.of(checks);
+    }
+
+    public MlCheck mlCheck() {
+        return mlCheck;
+    }
+
+    public void shutdown() {
+        mlCheck.shutdown();
     }
 
     public void dispatchAction(PlayerData data, ActionRecord action) {

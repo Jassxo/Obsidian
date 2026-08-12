@@ -1,0 +1,17 @@
+# Obsidian logistic model (bootstrap).
+#
+# Hand-calibrated from the deterministic checks' known-good thresholds so the ML
+# layer is sensible on day one. It is intentionally conservative: no single
+# feature crosses the flag threshold on its own, so the model only speaks up when
+# several signals agree. Collect labelled data with dataset-logging + /ob label,
+# then replace this with a trained model via ml/train/LogisticTrainer.
+#
+# Feature order (see Features.java):
+#   reach_mean_excess, reach_viol_ratio, angle_mean, angle_viol_ratio,
+#   click_mean_ms, click_sigma_ms, click_autocorr, aim_micro_fraction,
+#   max_distinct_targets, mace_combo_sigma_ms
+obsidian-model 1
+mean -0.2,0.03,18,0.03,160,45,0.05,0.35,1.0,150
+scale 0.4,0.2,20,0.2,80,30,0.3,0.3,1.0,80
+weight 0.9,1.6,0.6,1.3,-0.7,-1.0,1.0,-1.1,1.4,-0.6
+bias -2.6
