@@ -1,0 +1,48 @@
+Obsidian Anticheat — Proprietary License
+Copyright (c) 2026 Jassxo. All rights reserved.
+
+This software and its source code (the "Software") are the exclusive property of the
+copyright holder. Access to the source code does not grant ownership or any right
+beyond those expressly stated below. Access is not a license.
+
+1. CONTRIBUTIONS ARE WELCOME
+   You may view, download, build, and modify the Software for the sole purpose of
+   contributing improvements back to the official Obsidian project (its canonical
+   repository at https://github.com/Jassxo/Obsidian). You may open issues, propose
+   changes, and submit patches or pull requests.
+
+   By submitting a contribution, you grant the copyright holder a perpetual,
+   worldwide, irrevocable, royalty-free license to use, modify, sublicense, and
+   incorporate your contribution into the Software, and you confirm you have the
+   right to grant that license. Contributions become part of the Software and remain
+   under this License.
+
+2. THE IDEA AND THE CODE MAY NOT BE TAKEN
+   You may NOT, without the prior written permission of the copyright holder:
+   a. Redistribute, republish, mirror, or share the Software or any part of it, in
+      source or compiled form, outside the official project.
+   b. Use the Software, its source code, its detection methods, its architecture, or
+      its underlying concepts and design — in whole or in part — in any other project,
+      product, or service, whether your own or a third party's, and whether commercial
+      or non-commercial.
+   c. Create or operate a derivative, fork, or reimplementation as a separate product,
+      or otherwise present the Software's ideas as your own.
+   d. Sell, rent, lease, lend, or sublicense the Software.
+   e. Remove or alter this License or any copyright or attribution notice.
+
+   In short: help improve Obsidian here, but do not take Obsidian — its code or its
+   ideas — and use it elsewhere.
+
+3. RESERVATION OF RIGHTS
+   All rights not expressly granted in Section 1 are reserved by the copyright holder.
+   Permission to build for contribution purposes does not grant permission to deploy,
+   operate, or distribute the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE
+LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+For permission requests, contact the copyright holder.

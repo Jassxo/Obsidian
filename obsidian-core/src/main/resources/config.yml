@@ -1,0 +1,81 @@
+# Obsidian - crystal PvP anticheat
+# Detection is fully passive: nothing is ever cancelled, delayed or modified.
+# Do not edit config-version; it drives automatic migration.
+config-version: 1
+
+# Engine-wide settings. Per-check tuning lives in checks.yml.
+engine:
+  # Confidence a player must reach before staff get a FLAG alert.
+  flag-threshold: 90.0
+  # Confidence for the softer "suspicious" staff alert.
+  suspicious-threshold: 70.0
+  # Confidence at which the engine starts sampling that player in more detail.
+  watch-threshold: 40.0
+  # Exponential half-life of accumulated suspicion, in seconds. A player who
+  # stops producing signals halves their score every this-many seconds, so a
+  # burst from 20 minutes ago cannot flag anyone on its own.
+  decay-half-life-seconds: 300
+  # Players below this confidence for their whole session feed the server-wide
+  # legit baseline distributions.
+  baseline-max-confidence: 20.0
+  # Optional: let baseline drift tighten/loosen thresholds by at most 10%.
+  # Every adjustment is logged. Leave off unless you know why you want it.
+  adaptive-thresholds: false
+
+# Checks are skipped entirely while the server is struggling; a lag spike must
+# never become evidence against a player.
+lag:
+  # Skip all evaluation when the rolling MSPT exceeds this.
+  max-mspt: 65.0
+  # Ignore everything a player does for this long after teleport/world change.
+  post-teleport-grace-ms: 3000
+  # ...and after respawn.
+  post-respawn-grace-ms: 3000
+
+exemptions:
+  # Seconds after join during which a player is never evaluated.
+  join-grace-seconds: 10
+  # Worlds Obsidian ignores completely.
+  exempt-worlds: []
+  # creative/spectator players are always exempt; obsidian.bypass always exempts.
+
+# Punishment is OFF by default. Obsidian's job is evidence, not judgement.
+punishment:
+  enabled: false
+  # Confidence required before the command runs (only if enabled).
+  threshold: 97.0
+  # %player% is replaced. Runs on the global/main scheduler.
+  command: "say %player% would have been punished by Obsidian (dry run)"
+
+ledger:
+  # sqlite (default, zero setup) or mysql
+  backend: sqlite
+  sqlite:
+    file: ledger.db
+  mysql:
+    host: localhost
+    port: 3306
+    database: obsidian
+    username: obsidian
+    password: ""
+  # Async batch flush: whichever comes first.
+  flush-interval-seconds: 5
+  flush-batch-size: 50
+
+integrations:
+  grim:
+    # A GrimAC flag on the same player adds a small confidence bonus.
+    enabled: true
+    bonus-per-flag: 5.0
+    max-total-bonus: 15.0
+  discord-webhook:
+    enabled: false
+    url: ""
+
+metrics:
+  # Anonymous bStats metrics.
+  bstats: true
+
+debug:
+  # Verbose action-timeline logging to console. Very noisy; dev only.
+  log-timeline: false

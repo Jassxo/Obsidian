@@ -1,0 +1,28 @@
+# All player-facing text. MiniMessage format.
+config-version: 1
+
+prefix: "<gradient:#FF6EC7:#B44CF0>Obsidian</gradient> <dark_gray>»</dark_gray> "
+
+alerts:
+  flag: "<prefix><light_purple><player></light_purple> <gray>flagged crystal cheats</gray> <white><confidence>%</white> <gray>ping <ping>ms mspt <mspt></gray>"
+  flag-hover: "<gray>Top signals:\n<signals>\n<yellow>Click to teleport</yellow>"
+  suspicious: "<prefix><light_purple><player></light_purple> <gray>is suspicious</gray> <white><confidence>%</white>"
+  toggled-on: "<prefix><green>Alerts enabled.</green>"
+  toggled-off: "<prefix><red>Alerts disabled.</red>"
+
+commands:
+  no-permission: "<prefix><red>You don't have permission.</red>"
+  player-not-found: "<prefix><red>Player not found or no data yet.</red>"
+  reloaded: "<prefix><green>Configuration reloaded.</green>"
+  export-done: "<prefix><green>Exported to <white><file></white>.</green>"
+  export-failed: "<prefix><red>Export failed: <reason></red>"
+  usage: "<prefix><gray>/ob <alerts|check|history|debug|reload|export|stats></gray>"
+  check-header: "<prefix><gray>Confidence for <light_purple><player></light_purple>: <white><confidence>%</white>"
+  check-line: "  <dark_gray>-</dark_gray> <gray><check>: <white><detail></white></gray>"
+  check-empty: "  <dark_gray>-</dark_gray> <gray>no recent signals</gray>"
+  history-header: "<prefix><gray>Ledger for <light_purple><player></light_purple> (page <page>/<pages>)</gray>"
+  history-line: "  <dark_gray>-</dark_gray> <gray><time> <white><confidence>%</white> ping <ping>ms</gray>"
+  history-empty: "<prefix><gray>No ledger entries for <light_purple><player></light_purple>.</gray>"
+  debug-on: "<prefix><green>Debug stream for <player> enabled.</green>"
+  debug-off: "<prefix><red>Debug stream disabled.</red>"
+  stats: "<prefix><gray>flags today <white><flags-today></white> | baseline samples <white><baseline-samples></white> | engine <white><overhead>µs/tick</white></gray>"

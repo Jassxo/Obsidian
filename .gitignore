@@ -1,0 +1,29 @@
+# Build output
+target/
+build/
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs / runtime
+*.log
+logs/
+
+# Plugin runtime data (SQLite ledger, exports, ML datasets/models trained at runtime)
+data/
+run/
+dataset-*.jsonl

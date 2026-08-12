@@ -1,0 +1,26 @@
+name: Obsidian
+version: ${project.version}
+main: dev.obsidian.core.ObsidianPlugin
+api-version: '1.20'
+folia-supported: true
+authors: [Obsidian]
+description: Passive, statistics-driven crystal PvP anticheat. Complements general anticheats.
+depend: [packetevents]
+softdepend: [GrimAC, PlaceholderAPI]
+
+commands:
+  obsidian:
+    description: Obsidian anticheat commands
+    aliases: [ob]
+    permission: obsidian.staff
+
+permissions:
+  obsidian.staff:
+    description: Access to /ob commands
+    default: op
+  obsidian.alerts:
+    description: Receive Obsidian staff alerts
+    default: op
+  obsidian.bypass:
+    description: Fully exempt from all Obsidian checks
+    default: false

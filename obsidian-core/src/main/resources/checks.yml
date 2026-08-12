@@ -1,0 +1,86 @@
+# Per-check tuning. Every timing value here is AFTER ping compensation
+# (rolling median of the player's last 20 keepalive round-trips is subtracted
+# from every measurement) and MSPT scaling.
+#
+# likelihood-ratio: how strongly a full-strength signal from this check moves
+# the player's suspicion odds. 1.0 = no effect, 2.0 = doubles the odds.
+# Partial-strength signals apply a proportionally smaller ratio.
+#
+# experimental checks self-disable if the engine exceeds its performance
+# budget, and should keep likelihood-ratio low.
+config-version: 1
+
+checks:
+  spawn-reaction:
+    enabled: true
+    likelihood-ratio: 3.0
+    # Humans reacting to a crystal appearing bottom out around 130-180ms even
+    # for elite players; a compensated reaction below this is a floor hit.
+    min-reaction-ms: 80
+    # The stronger tell: machines are consistent. Standard deviation of the
+    # last N compensated reactions below sigma-floor-ms means a machine.
+    sample-window: 15
+    sigma-floor-ms: 25
+    # Reactions faster than this are ignored as coincidence (player was
+    # already clicking); genuine pre-aimed spam produces a few of these.
+    coincidence-floor-ms: 15
+
+  place-break-cycle:
+    enabled: true
+    likelihood-ratio: 3.0
+    # Full attack->place->attack cycle floor for a human, compensated.
+    min-cycle-ms: 120
+    sample-window: 20
+    sigma-floor-ms: 20
+    # Lag-1 autocorrelation of cycle intervals above this over the window is
+    # the "fixed delay" signature; human intervals are noisy.
+    autocorrelation-threshold: 0.95
+
+  opportunity-reaction:
+    enabled: true
+    likelihood-ratio: 2.5
+    # Onset of a valid placement spot -> place packet, compensated.
+    min-reaction-ms: 100
+    sample-window: 12
+    sigma-floor-ms: 30
+    # Geometry only runs while the player is in combat and holding crystals.
+    combat-window-seconds: 10
+    # Max distance at which we look for placement opportunities.
+    scan-range: 5.0
+
+  anchor-cycle:
+    enabled: true
+    likelihood-ratio: 3.0
+    # glowstone place -> anchor interact floor, compensated.
+    min-interval-ms: 90
+    sample-window: 15
+    sigma-floor-ms: 20
+    # hotbar switch -> use within this compensated window, repeatedly, is a macro.
+    min-switch-use-ms: 45
+
+  snap-rotation:
+    enabled: true
+    likelihood-ratio: 2.0
+    # Yaw+pitch delta (deg) in <=3 packets that lands exactly on target and
+    # snaps back. Humans overshoot and micro-correct.
+    min-snap-degrees: 25.0
+    # Absence of sub-0.1 degree jitter during the approach counts against.
+    sample-window: 10
+
+  gcd-rotation:
+    enabled: true
+    experimental: true
+    likelihood-ratio: 1.3
+    # Rotation deltas that break the player's established sensitivity GCD only
+    # during crystal actions. Sensitivity changes and cinematic camera are
+    # known false-positive sources, hence experimental + low weight.
+    sample-window: 30
+    min-established-samples: 60
+
+  aim-consistency:
+    enabled: true
+    experimental: true
+    likelihood-ratio: 1.3
+    # Chi-square style test on where attacks land on the crystal hitbox.
+    # Needs many samples before it says anything at all.
+    min-samples: 30
