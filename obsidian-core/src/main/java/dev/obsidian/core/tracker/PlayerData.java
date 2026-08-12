@@ -24,6 +24,9 @@ public final class PlayerData {
     public final LagContext lagContext = new LagContext();
     public final SuspicionState suspicion = new SuspicionState();
 
+    /** Entities this player currently sees, for reach and aim geometry (v2 combat). */
+    public final EntityTracker entities = new EntityTracker();
+
     /** crystal entity id -> nanos the spawn packet was sent to THIS player. */
     public final Int2LongOpenHashMap crystalSeenNanos = new Int2LongOpenHashMap(64);
 
@@ -70,6 +73,15 @@ public final class PlayerData {
 
     /** Last time this player dealt or took damage; drives combat gating. */
     public volatile long lastCombatNanos = -1;
+
+    // Own-movement state, mirrored from position-bearing flying packets. Used to
+    // know the player's vertical velocity at attack time (mace smash detection).
+    public double lastPosX;
+    public double lastPosY;
+    public double lastPosZ;
+    public boolean hasPos;
+    /** Vertical velocity in blocks/tick, negative while falling. */
+    public double verticalVelocity;
 
     // Alert cooldowns, owned by the confidence engine. MIN_VALUE = never.
     public long lastSuspiciousAlertNanos = Long.MIN_VALUE;

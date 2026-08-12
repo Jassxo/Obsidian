@@ -14,13 +14,18 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientKe
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerBlockPlacement;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityRelativeMove;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityRelativeMoveAndRotation;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityTeleport;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnPlayer;
 import dev.obsidian.core.ObsidianPlugin;
 import dev.obsidian.core.tracker.ActionRecord;
 import dev.obsidian.core.tracker.ActionType;
 import dev.obsidian.core.tracker.CrystalTracker;
 import dev.obsidian.core.tracker.PlayerData;
+import dev.obsidian.core.tracker.TrackedEntity;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -35,6 +40,23 @@ import org.bukkit.entity.Player;
  * the main thread; nothing here mutates game state.</p>
  */
 public final class PacketIngestListener extends PacketListenerAbstract {
+
+    /**
+     * Extra slack, on top of the player's ping, for the lag-compensation window
+     * used by reach: covers entity interpolation and packet jitter. Generous on
+     * purpose — reach must never fire on a legit laggy hit.
+     */
+    private static final long REACH_WINDOW_SLACK_MS = 100L;
+
+    // 1.21+ items resolved by name so this compiles and runs on 1.20.x too; null
+    // there, which simply means the mace/wind-charge paths stay dormant.
+    private static final Material MACE = Material.getMaterial("MACE");
+    private static final Material WIND_CHARGE = Material.getMaterial("WIND_CHARGE");
+
+    // Rough default hitbox for non-player entities we track; reach checks ignore
+    // these (player targets only), so exactness here does not matter.
+    private static final double DEFAULT_WIDTH = 0.6;
+    private static final double DEFAULT_HEIGHT = 1.8;
 
     private final ObsidianPlugin plugin;
 
@@ -66,6 +88,10 @@ public final class PacketIngestListener extends PacketListenerAbstract {
 
         if (WrapperPlayClientPlayerFlying.isFlying(type)) {
             WrapperPlayClientPlayerFlying flying = new WrapperPlayClientPlayerFlying(event);
+            if (flying.hasPositionChanged()) {
+                updateVelocity(data, flying.getLocation().getX(),
+                        flying.getLocation().getY(), flying.getLocation().getZ());
+            }
             if (flying.hasRotationChanged()) {
                 data.rotations.add(flying.getLocation().getYaw(), flying.getLocation().getPitch(), now);
                 if (!isExempt(data, now)) {
@@ -92,17 +118,7 @@ public final class PacketIngestListener extends PacketListenerAbstract {
             if (interact.getAction() != WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
                 return;
             }
-            int entityId = interact.getEntityId();
-            CrystalTracker.CrystalRecord crystal = plugin.crystals().getCrystal(entityId);
-            if (crystal == null) {
-                return;
-            }
-            data.lastCombatNanos = now; // fighting crystals is combat
-            float angle = angleToPoint(player, data, crystal.x, crystal.y + 1.0, crystal.z);
-            ingest(data, player, ActionType.CRYSTAL_ATTACK, now, rec -> {
-                rec.targetEntityId = entityId;
-                rec.angleToTarget = angle;
-            });
+            onAttack(data, player, interact.getEntityId(), now);
             return;
         }
 
@@ -135,13 +151,53 @@ public final class PacketIngestListener extends PacketListenerAbstract {
         }
 
         if (type == PacketType.Play.Client.USE_ITEM) {
-            ingest(data, player, ActionType.USE_ITEM, now, null);
+            if (WIND_CHARGE != null && mainHand(player) == WIND_CHARGE) {
+                ingest(data, player, ActionType.WIND_CHARGE_USE, now, null);
+            } else {
+                ingest(data, player, ActionType.USE_ITEM, now, null);
+            }
             return;
         }
 
         if (type == PacketType.Play.Client.ANIMATION) {
             ingest(data, player, ActionType.SWING, now, null);
         }
+    }
+
+    /**
+     * Attack on some entity. Crystals keep their existing dedicated path; any
+     * other tracked entity becomes an ENTITY_ATTACK carrying the geometry the
+     * combat checks need (lenient reach, angle-to-target, target kind, mace and
+     * fall context).
+     */
+    private void onAttack(PlayerData data, Player player, int entityId, long now) {
+        CrystalTracker.CrystalRecord crystal = plugin.crystals().getCrystal(entityId);
+        if (crystal != null) {
+            data.lastCombatNanos = now; // fighting crystals is combat
+            float angle = angleToPoint(player, data, crystal.x, crystal.y + 1.0, crystal.z);
+            ingest(data, player, ActionType.CRYSTAL_ATTACK, now, rec -> {
+                rec.targetEntityId = entityId;
+                rec.angleToTarget = angle;
+            });
+            return;
+        }
+
+        TrackedEntity target = data.entities.get(entityId);
+        data.lastCombatNanos = now;
+        boolean isPlayer = target != null && target.kind() == TrackedEntity.Kind.PLAYER;
+        boolean mace = MACE != null && mainHand(player) == MACE;
+        float angle = target == null ? -1f
+                : angleToPoint(player, data, target.centerX(), target.centerY(), target.centerZ());
+        double reach = target == null ? -1 : reachTo(player, target, data, now);
+        double vy = data.verticalVelocity;
+        ingest(data, player, ActionType.ENTITY_ATTACK, now, rec -> {
+            rec.targetEntityId = entityId;
+            rec.targetIsPlayer = isPlayer;
+            rec.angleToTarget = angle;
+            rec.reachDistance = reach;
+            rec.withMace = mace;
+            rec.verticalVelocity = vy;
+        });
     }
 
     // ------------------------------------------------------------------
@@ -167,23 +223,57 @@ public final class PacketIngestListener extends PacketListenerAbstract {
 
         if (type == PacketType.Play.Server.SPAWN_ENTITY) {
             WrapperPlayServerSpawnEntity spawn = new WrapperPlayServerSpawnEntity(event);
-            if (spawn.getEntityType() != EntityTypes.END_CRYSTAL) {
+            Vector3d pos = spawn.getPosition();
+            if (spawn.getEntityType() == EntityTypes.END_CRYSTAL) {
+                plugin.crystals().onCrystalSpawn(spawn.getEntityId(), pos.getX(), pos.getY(), pos.getZ(), now);
+                // Per-viewer spawn time: the moment the crystal became visible to
+                // THIS player, the basis of the spawn-reaction check.
+                data.crystalSeenNanos.put(spawn.getEntityId(), now);
+                if (data.crystalSeenNanos.size() > 256) {
+                    data.crystalSeenNanos.clear(); // leak guard; entries normally die with the crystal
+                }
                 return;
             }
-            Vector3d pos = spawn.getPosition();
-            plugin.crystals().onCrystalSpawn(spawn.getEntityId(), pos.getX(), pos.getY(), pos.getZ(), now);
-            // Per-viewer spawn time: this is the moment the crystal became
-            // visible to THIS player, the basis of the spawn-reaction check.
-            data.crystalSeenNanos.put(spawn.getEntityId(), now);
-            if (data.crystalSeenNanos.size() > 256) {
-                data.crystalSeenNanos.clear(); // leak guard; entries normally die with the crystal
+            if (spawn.getEntityType() == EntityTypes.PLAYER) {
+                data.entities.spawnPlayer(spawn.getEntityId(), pos.getX(), pos.getY(), pos.getZ(), now);
+            } else {
+                data.entities.spawnOther(spawn.getEntityId(), DEFAULT_WIDTH, DEFAULT_HEIGHT,
+                        pos.getX(), pos.getY(), pos.getZ(), now);
             }
+            return;
+        }
+
+        if (type == PacketType.Play.Server.SPAWN_PLAYER) {
+            WrapperPlayServerSpawnPlayer spawn = new WrapperPlayServerSpawnPlayer(event);
+            Vector3d pos = spawn.getPosition();
+            data.entities.spawnPlayer(spawn.getEntityId(), pos.getX(), pos.getY(), pos.getZ(), now);
+            return;
+        }
+
+        if (type == PacketType.Play.Server.ENTITY_RELATIVE_MOVE) {
+            WrapperPlayServerEntityRelativeMove move = new WrapperPlayServerEntityRelativeMove(event);
+            data.entities.move(move.getEntityId(), move.getDeltaX(), move.getDeltaY(), move.getDeltaZ(), now);
+            return;
+        }
+
+        if (type == PacketType.Play.Server.ENTITY_RELATIVE_MOVE_AND_ROTATION) {
+            WrapperPlayServerEntityRelativeMoveAndRotation move =
+                    new WrapperPlayServerEntityRelativeMoveAndRotation(event);
+            data.entities.move(move.getEntityId(), move.getDeltaX(), move.getDeltaY(), move.getDeltaZ(), now);
+            return;
+        }
+
+        if (type == PacketType.Play.Server.ENTITY_TELEPORT) {
+            WrapperPlayServerEntityTeleport tp = new WrapperPlayServerEntityTeleport(event);
+            Vector3d p = tp.getPosition();
+            data.entities.teleport(tp.getEntityId(), p.getX(), p.getY(), p.getZ(), now);
             return;
         }
 
         if (type == PacketType.Play.Server.DESTROY_ENTITIES) {
             WrapperPlayServerDestroyEntities destroy = new WrapperPlayServerDestroyEntities(event);
             for (int entityId : destroy.getEntityIds()) {
+                data.entities.remove(entityId);
                 CrystalTracker.CrystalRecord crystal =
                         plugin.crystals().getCrystalOrRecentlyDestroyed(entityId);
                 if (crystal == null) {
@@ -232,8 +322,30 @@ public final class PacketIngestListener extends PacketListenerAbstract {
                 recentTeleport, recentRespawn, plugin.configs().maxMspt());
     }
 
+    /** Track the player's own vertical velocity from position-bearing flying packets. */
+    private static void updateVelocity(PlayerData data, double x, double y, double z) {
+        if (data.hasPos) {
+            data.verticalVelocity = y - data.lastPosY;
+        }
+        data.lastPosX = x;
+        data.lastPosY = y;
+        data.lastPosZ = z;
+        data.hasPos = true;
+    }
+
     private static Material mainHand(Player player) {
         return player.getInventory().getItemInMainHand().getType();
+    }
+
+    /** Lenient eye→hitbox reach for an attacked entity, or -1 if unmeasurable. */
+    private static double reachTo(Player player, TrackedEntity target, PlayerData data, long now) {
+        Location loc = player.getLocation();
+        double eyeX = loc.getX();
+        double eyeY = loc.getY() + player.getEyeHeight();
+        double eyeZ = loc.getZ();
+        long window = (data.ping.medianPing() + REACH_WINDOW_SLACK_MS) * 1_000_000L;
+        double d = target.minReachDistance(eyeX, eyeY, eyeZ, now - window);
+        return d == Double.MAX_VALUE ? -1 : d;
     }
 
     /** Angle in degrees between the player's crosshair and a world point. */
