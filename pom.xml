@@ -6,11 +6,11 @@
 
     <groupId>dev.obsidian</groupId>
     <artifactId>obsidian-parent</artifactId>
-    <version>1.0.0</version>
+    <version>2.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Obsidian</name>
-    <description>Passive, statistics-driven crystal PvP anticheat for Paper and Folia.</description>
+    <description>Passive, statistics-driven PvP anticheat for Paper and Folia: crystal, aim, killaura, auto-mace, autoclicker and reach detection with a corroborating machine-learning layer.</description>
 
     <modules>
         <module>obsidian-api</module>
