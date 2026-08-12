@@ -40,12 +40,50 @@ public final class ObCommand implements TabExecutor {
             case "check" -> check(sender, args);
             case "history" -> history(sender, args);
             case "debug" -> debug(sender, args);
+            case "label" -> label(sender, args);
+            case "ml" -> ml(sender);
             case "reload" -> reload(sender);
             case "export" -> export(sender, args);
             case "stats" -> stats(sender);
             default -> send(sender, "commands.usage");
         }
         return true;
+    }
+
+    /** /ob label <player> cheat|legit|clear — tags a player for ML dataset collection. */
+    private void label(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            send(sender, "commands.label-usage");
+            return;
+        }
+        PlayerData data = findData(args[1]);
+        if (data == null) {
+            send(sender, "commands.player-not-found");
+            return;
+        }
+        String value = args[2].toLowerCase();
+        switch (value) {
+            case "cheat", "legit" -> {
+                data.datasetLabel = value;
+                sender.sendMessage(plugin.messages().render("commands.label-set",
+                        Placeholder.unparsed("player", data.name()),
+                        Placeholder.unparsed("label", value)));
+            }
+            case "clear", "none" -> {
+                data.datasetLabel = null;
+                sender.sendMessage(plugin.messages().render("commands.label-cleared",
+                        Placeholder.unparsed("player", data.name())));
+            }
+            default -> send(sender, "commands.label-usage");
+        }
+    }
+
+    /** /ob ml — reports the loaded model and whether dataset logging is on. */
+    private void ml(CommandSender sender) {
+        var mlCheck = plugin.checkManager().mlCheck();
+        sender.sendMessage(plugin.messages().render("commands.ml-status",
+                Placeholder.unparsed("model", mlCheck.modelId()),
+                Placeholder.unparsed("logging", mlCheck.datasetLogging() ? "on" : "off")));
     }
 
     private void alerts(CommandSender sender) {
@@ -180,15 +218,20 @@ public final class ObCommand implements TabExecutor {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Stream.of("alerts", "check", "history", "debug", "reload", "export", "stats")
+            return Stream.of("alerts", "check", "history", "debug", "label", "ml", "reload", "export", "stats")
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .toList();
         }
-        if (args.length == 2 && Stream.of("check", "history", "debug", "export")
+        if (args.length == 2 && Stream.of("check", "history", "debug", "export", "label")
                 .anyMatch(s -> s.equalsIgnoreCase(args[0]))) {
             return plugin.getServer().getOnlinePlayers().stream()
                     .map(Player::getName)
                     .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase()))
+                    .toList();
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("label")) {
+            return Stream.of("cheat", "legit", "clear")
+                    .filter(s -> s.startsWith(args[2].toLowerCase()))
                     .toList();
         }
         return List.of();

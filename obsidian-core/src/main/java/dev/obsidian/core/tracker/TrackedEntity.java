@@ -1,9 +1,13 @@
 package dev.obsidian.core.tracker;
 
 /**
- * One entity as a single client sees it: its hitbox and a short history of
- * positions, each stamped with the nanotime the movement packet was sent to
- * that client. Preallocated arrays only; nothing is allocated as positions flow.
+ * One player as a single client sees them: their hitbox and a short history of
+ * positions, each stamped with the nanotime the movement packet was sent to that
+ * client. Preallocated arrays only; nothing is allocated as positions flow.
+ *
+ * <p>Only players are tracked — they are the only targets the combat checks
+ * reason about — so the hitbox is the fixed vanilla player box and there is no
+ * per-entity type to carry.</p>
  *
  * <p>The history exists for one reason: <b>lag compensation without false
  * positives</b>. When a player attacks, the target may have been anywhere along
@@ -17,12 +21,11 @@ public final class TrackedEntity {
     /** Positions kept per entity. Covers well over a second of movement at 20 tps. */
     private static final int HISTORY = 24;
 
-    public enum Kind { PLAYER, OTHER }
+    // Vanilla standing player hitbox.
+    private static final double HALF_WIDTH = 0.3;
+    private static final double HEIGHT = 1.8;
 
     private final int entityId;
-    private final Kind kind;
-    private final double halfWidth;
-    private final double height;
 
     private final long[] nanos = new long[HISTORY];
     private final double[] x = new double[HISTORY];
@@ -36,21 +39,13 @@ public final class TrackedEntity {
     private double lastY;
     private double lastZ;
 
-    public TrackedEntity(int entityId, Kind kind, double width, double height,
-                         double x, double y, double z, long nanos) {
+    public TrackedEntity(int entityId, double x, double y, double z, long nanos) {
         this.entityId = entityId;
-        this.kind = kind;
-        this.halfWidth = width / 2.0;
-        this.height = height;
         teleport(x, y, z, nanos);
     }
 
     public int entityId() {
         return entityId;
-    }
-
-    public Kind kind() {
-        return kind;
     }
 
     /** Absolute reposition (spawn / teleport / position-sync). */
@@ -98,12 +93,12 @@ public final class TrackedEntity {
         return any ? best : Double.MAX_VALUE;
     }
 
-    /** Distance from a point to this entity's axis-aligned hitbox at (px,py,pz). */
-    private double distanceToHitbox(double eyeX, double eyeY, double eyeZ,
-                                    double px, double py, double pz) {
-        double dx = axisGap(eyeX, px - halfWidth, px + halfWidth);
-        double dy = axisGap(eyeY, py, py + height);
-        double dz = axisGap(eyeZ, pz - halfWidth, pz + halfWidth);
+    /** Distance from a point to this player's axis-aligned hitbox at (px,py,pz). */
+    private static double distanceToHitbox(double eyeX, double eyeY, double eyeZ,
+                                           double px, double py, double pz) {
+        double dx = axisGap(eyeX, px - HALF_WIDTH, px + HALF_WIDTH);
+        double dy = axisGap(eyeY, py, py + HEIGHT);
+        double dz = axisGap(eyeZ, pz - HALF_WIDTH, pz + HALF_WIDTH);
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
@@ -123,7 +118,7 @@ public final class TrackedEntity {
     }
 
     public double centerY() {
-        return lastY + height / 2.0;
+        return lastY + HEIGHT / 2.0;
     }
 
     public double centerZ() {

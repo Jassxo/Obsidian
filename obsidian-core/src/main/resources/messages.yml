@@ -1,5 +1,5 @@
 # All player-facing text. MiniMessage format.
-config-version: 1
+config-version: 2
 
 prefix: "<gradient:#FF6EC7:#B44CF0>Obsidian</gradient> <dark_gray>»</dark_gray> "
 
@@ -16,7 +16,11 @@ commands:
   reloaded: "<prefix><green>Configuration reloaded.</green>"
   export-done: "<prefix><green>Exported to <white><file></white>.</green>"
   export-failed: "<prefix><red>Export failed: <reason></red>"
-  usage: "<prefix><gray>/ob <alerts|check|history|debug|reload|export|stats></gray>"
+  usage: "<prefix><gray>/ob <alerts|check|history|debug|label|ml|reload|export|stats></gray>"
+  label-usage: "<prefix><gray>/ob label <player> <cheat|legit|clear></gray>"
+  label-set: "<prefix><green>Labelled <light_purple><player></light_purple> as <white><label></white> for ML data.</green>"
+  label-cleared: "<prefix><green>Cleared ML label for <light_purple><player></light_purple>.</green>"
+  ml-status: "<prefix><gray>ML model <white><model></white> | dataset logging <white><logging></white></gray>"
   check-header: "<prefix><gray>Confidence for <light_purple><player></light_purple>: <white><confidence>%</white>"
   check-line: "  <dark_gray>-</dark_gray> <gray><check>: <white><detail></white></gray>"
   check-empty: "  <dark_gray>-</dark_gray> <gray>no recent signals</gray>"

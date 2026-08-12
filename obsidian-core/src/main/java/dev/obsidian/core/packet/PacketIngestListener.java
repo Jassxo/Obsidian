@@ -56,10 +56,8 @@ public final class PacketIngestListener extends PacketListenerAbstract {
     /** High-reach melee weapon; null on versions without it, so the path stays dormant. */
     private static final Material SPEAR = Material.getMaterial("SPEAR");
 
-    // Rough default hitbox for non-player entities we track; reach checks ignore
-    // these (player targets only), so exactness here does not matter.
-    private static final double DEFAULT_WIDTH = 0.6;
-    private static final double DEFAULT_HEIGHT = 1.8;
+    /** Standard eye height, used only as a fallback before the first position packet. */
+    private static final double DEFAULT_EYE_HEIGHT = 1.62;
 
     private final ObsidianPlugin plugin;
 
@@ -174,10 +172,27 @@ public final class PacketIngestListener extends PacketListenerAbstract {
      * fall context).
      */
     private void onAttack(PlayerData data, Player player, int entityId, long now) {
+        // Attacker eye, from the player's own packet position when we have it (no
+        // Location allocation, and more packet-accurate than the Bukkit snapshot).
+        double eyeHeight = player.getEyeHeight();
+        double eyeX;
+        double eyeY;
+        double eyeZ;
+        if (data.hasPos) {
+            eyeX = data.lastPosX;
+            eyeY = data.lastPosY + eyeHeight;
+            eyeZ = data.lastPosZ;
+        } else {
+            Location loc = player.getLocation();
+            eyeX = loc.getX();
+            eyeY = loc.getY() + (eyeHeight > 0 ? eyeHeight : DEFAULT_EYE_HEIGHT);
+            eyeZ = loc.getZ();
+        }
+
         CrystalTracker.CrystalRecord crystal = plugin.crystals().getCrystal(entityId);
         if (crystal != null) {
             data.lastCombatNanos = now; // fighting crystals is combat
-            float angle = angleToPoint(player, data, crystal.x, crystal.y + 1.0, crystal.z);
+            float angle = angleTo(data, eyeX, eyeY, eyeZ, crystal.x, crystal.y + 1.0, crystal.z);
             ingest(data, player, ActionType.CRYSTAL_ATTACK, now, rec -> {
                 rec.targetEntityId = entityId;
                 rec.angleToTarget = angle;
@@ -185,21 +200,27 @@ public final class PacketIngestListener extends PacketListenerAbstract {
             return;
         }
 
-        TrackedEntity target = data.entities.get(entityId);
+        TrackedEntity target = data.entities.get(entityId); // non-null == a tracked player
         data.lastCombatNanos = now;
-        boolean isPlayer = target != null && target.kind() == TrackedEntity.Kind.PLAYER;
+        boolean isPlayer = target != null;
         Material held = mainHand(player);
         boolean mace = MACE != null && held == MACE;
         float angle = target == null ? -1f
-                : angleToPoint(player, data, target.centerX(), target.centerY(), target.centerZ());
-        double reach = target == null ? -1 : reachTo(player, target, data, now);
+                : angleTo(data, eyeX, eyeY, eyeZ, target.centerX(), target.centerY(), target.centerZ());
+        double reach = -1;
+        if (target != null) {
+            long window = (data.ping.medianPing() + REACH_WINDOW_SLACK_MS) * 1_000_000L;
+            double d = target.minReachDistance(eyeX, eyeY, eyeZ, now - window);
+            reach = d == Double.MAX_VALUE ? -1 : d;
+        }
         double limit = effectiveReachLimit(player, held);
         double vy = data.verticalVelocity;
+        double reachFinal = reach;
         ingest(data, player, ActionType.ENTITY_ATTACK, now, rec -> {
             rec.targetEntityId = entityId;
             rec.targetIsPlayer = isPlayer;
             rec.angleToTarget = angle;
-            rec.reachDistance = reach;
+            rec.reachDistance = reachFinal;
             rec.reachLimit = limit;
             rec.withMace = mace;
             rec.verticalVelocity = vy;
@@ -240,11 +261,9 @@ public final class PacketIngestListener extends PacketListenerAbstract {
                 }
                 return;
             }
+            // Only players are tracked; everything else is skipped entirely.
             if (spawn.getEntityType() == EntityTypes.PLAYER) {
                 data.entities.spawnPlayer(spawn.getEntityId(), pos.getX(), pos.getY(), pos.getZ(), now);
-            } else {
-                data.entities.spawnOther(spawn.getEntityId(), DEFAULT_WIDTH, DEFAULT_HEIGHT,
-                        pos.getX(), pos.getY(), pos.getZ(), now);
             }
             return;
         }
@@ -363,26 +382,15 @@ public final class PacketIngestListener extends PacketListenerAbstract {
         return player.getInventory().getItemInMainHand().getType();
     }
 
-    /** Lenient eye→hitbox reach for an attacked entity, or -1 if unmeasurable. */
-    private static double reachTo(Player player, TrackedEntity target, PlayerData data, long now) {
-        Location loc = player.getLocation();
-        double eyeX = loc.getX();
-        double eyeY = loc.getY() + player.getEyeHeight();
-        double eyeZ = loc.getZ();
-        long window = (data.ping.medianPing() + REACH_WINDOW_SLACK_MS) * 1_000_000L;
-        double d = target.minReachDistance(eyeX, eyeY, eyeZ, now - window);
-        return d == Double.MAX_VALUE ? -1 : d;
-    }
-
-    /** Angle in degrees between the player's crosshair and a world point. */
-    private static float angleToPoint(Player player, PlayerData data, double x, double y, double z) {
+    /** Angle in degrees between the player's crosshair and a world point from a given eye. */
+    private static float angleTo(PlayerData data, double eyeX, double eyeY, double eyeZ,
+                                 double x, double y, double z) {
         if (data.rotations.size() == 0) {
             return -1f;
         }
-        Location loc = player.getLocation();
-        double dx = x - loc.getX();
-        double dy = y - (loc.getY() + player.getEyeHeight());
-        double dz = z - loc.getZ();
+        double dx = x - eyeX;
+        double dy = y - eyeY;
+        double dz = z - eyeZ;
         double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (len < 1e-6) {
             return 0f;

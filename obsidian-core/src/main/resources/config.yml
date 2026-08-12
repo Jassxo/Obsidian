@@ -90,6 +90,13 @@ integrations:
     enabled: true
     bonus-per-flag: 5.0
     max-total-bonus: 15.0
+  totemguard:
+    # Obsidian (combat/aim) and TotemGuard (autototem/inventory) already coexist
+    # with no setup. This optional bridge lets a TotemGuard flag add a small,
+    # capped confidence bonus to the same player: corroboration, never conviction.
+    enabled: true
+    bonus-per-flag: 5.0
+    max-total-bonus: 15.0
   discord-webhook:
     enabled: false
     url: ""

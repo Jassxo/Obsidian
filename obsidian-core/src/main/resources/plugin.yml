@@ -4,9 +4,9 @@ main: dev.obsidian.core.ObsidianPlugin
 api-version: '1.20'
 folia-supported: true
 authors: [Obsidian]
-description: Passive, statistics-driven crystal PvP anticheat. Complements general anticheats.
+description: Passive, statistics-driven PvP anticheat (crystal, aim, killaura, auto-mace, autoclicker, reach) with a corroborating ML layer. Complements general anticheats and coexists with TotemGuard.
 depend: [packetevents]
-softdepend: [GrimAC, PlaceholderAPI]
+softdepend: [GrimAC, TotemGuard, PlaceholderAPI]
 
 commands:
   obsidian:

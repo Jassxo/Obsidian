@@ -227,6 +227,18 @@ public final class ConfigManager {
         return config.getDouble("integrations.grim.max-total-bonus", 15.0);
     }
 
+    public boolean totemGuardEnabled() {
+        return config.getBoolean("integrations.totemguard.enabled", true);
+    }
+
+    public double totemGuardBonusPerFlag() {
+        return config.getDouble("integrations.totemguard.bonus-per-flag", 5.0);
+    }
+
+    public double totemGuardMaxTotalBonus() {
+        return config.getDouble("integrations.totemguard.max-total-bonus", 15.0);
+    }
+
     public boolean webhookEnabled() {
         return config.getBoolean("integrations.discord-webhook.enabled", false);
     }

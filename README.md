@@ -11,37 +11,57 @@ guiding principle is simple: **a missed signal is recoverable, a false flag is n
 
 ## What it detects
 
-**v1 (this release, `main`)** focuses on crystal PvP:
+**Crystal PvP**
+- Spawn reaction, place/break cycle, opportunity reaction, anchor cycle
+- Snap and GCD rotation, aim consistency
 
-- Spawn reaction — inhuman reaction time to a crystal appearing
-- Place / break cycle — machine-regular attack→place→attack timing
-- Opportunity reaction — placing the instant a spot opens, repeatedly
-- Anchor cycle — glowstone→anchor macro timing
-- Snap and GCD rotation — locked aim vectors and sensitivity-GCD breaks
-- Aim consistency — hits piling onto one angular band of the hitbox
+**General combat**
+- **Reach / hitbox** — hits landing beyond the allowed distance, measured leniently
+- **Killaura / silent aim** — hits while the crosshair is off the target
+- **Multi-target aura** — several distinct players hit within an inhuman window
+- **Autoclicker** — machine-regular click intervals during combat
+- **Aim assist / aimbot** — snap-onto-target then mirror-return flicks
+- **Auto-mace** — machine-timed wind-charge → mace-smash combos
 
-**v2 (in development, `v2` branch)** grows Obsidian into a general modern-PvP anticheat:
-aim assist / aimbot, killaura and auto-mace, autoclicker / CPS, and reach / hitbox
-detection, plus a lightweight, corroborating machine-learning layer. It is designed to
-run alongside dedicated checks like TotemGuard (autototem/inventory) without conflict.
+**Machine learning** — a lightweight logistic model scores each window of combat over
+engineered features and adds one corroborating signal when several agree. It is pure
+Java, ships calibrated out of the box, and can be retrained on your own server's data
+(see below). It never convicts on its own.
 
 ## How it works
 
-Packets are translated into a typed, per-player action timeline. Independent *checks*
-read that timeline and emit weighted **signals** — never verdicts. A Bayesian confidence
-engine accumulates those signals in log-odds space, decays stale evidence exponentially,
-and walks a ladder: watch → suspicious alert → flag (persisted) → optional punishment.
+Packets become a typed, per-player action timeline. Independent *checks* read that
+timeline and emit weighted **signals** — never verdicts. A Bayesian confidence engine
+accumulates them in log-odds space, decays stale evidence exponentially, and walks a
+ladder: watch → suspicious alert → flag (persisted) → optional punishment.
 
-Every timing measurement is compensated for the player's ping (rolling median of the last
-keepalive round-trips) and scaled by server MSPT, and evaluation is skipped during lag
-spikes, teleports, and respawns. Checks that are more speculative are marked
-*experimental* and self-disable if the engine exceeds its performance budget.
+Every timing measurement is compensated for the player's ping and scaled by server
+MSPT. Evaluation is skipped during lag spikes, teleports, respawns, and — importantly —
+whenever a connection is **jittery or spiking**, so a laggy player is never flagged or
+punished for their connection. Speculative checks are marked *experimental* and
+self-disable if the engine exceeds its performance budget.
+
+### Built to avoid false flags
+
+- **Ping**: stable high ping compensates cleanly and stays checkable; unstable ping
+  makes every check stand down.
+- **Spear / high-reach weapons**: reach limits are raised per-hit while a spear is held.
+- **Gamemode**: creative and spectator are fully exempt; reach also raises its limit in
+  creative as a safeguard.
+- Every combat check needs sustained evidence — none act on a single hit.
+
+## Works alongside TotemGuard
+
+Obsidian handles combat and aim; [TotemGuard](https://github.com/Bram1903/TotemGuard)
+handles autototem and inventory. Both are passive PacketEvents listeners with separate
+concerns, so they coexist with no setup. An optional bridge lets a TotemGuard flag add a
+small, capped confidence bonus to the same player — corroboration, never conviction.
 
 ## Requirements
 
 - Paper or Folia, Java 21+
 - [PacketEvents](https://github.com/retrooper/packetevents) (standalone plugin)
-- Optional: PlaceholderAPI, GrimAC (corroboration bridge)
+- Optional: TotemGuard, GrimAC (corroboration bridges), PlaceholderAPI
 
 ## Building
 
@@ -58,17 +78,38 @@ The shaded plugin jar is produced at `obsidian-core/target/Obsidian-<version>.ja
 `/obsidian` (alias `/ob`):
 
 - `alerts` — toggle staff alerts
-- `check <player>` — show a player's current confidence and active signals
+- `check <player>` — a player's current confidence and active signals
 - `history <player> [page]` — flag history from the ledger
 - `debug <player>` — stream a player's signals to yourself
-- `stats` — flags today, baseline sample count, engine overhead
+- `label <player> <cheat|legit|clear>` — tag a player for ML dataset collection
+- `ml` — show the loaded model and whether dataset logging is on
+- `stats` — flags today, baseline samples, engine overhead
 - `export <player>` — export a player's ledger rows
 - `reload` — reload configuration
 
+## Training your own model
+
+The shipped model is a conservative bootstrap. To make it genuinely accurate for your
+server, collect labelled data and retrain:
+
+1. Set `checks.ml.dataset-logging: true` in `checks.yml` and `/ob reload`.
+2. As players fight, label them with `/ob label <player> cheat` or `legit`. Each scored
+   combat window is written to `plugins/Obsidian/dataset.csv` with that label.
+3. Once you have a good spread of labelled rows, train a new model:
+
+   ```bash
+   java -cp Obsidian-<version>.jar dev.obsidian.core.ml.train.LogisticTrainer \
+        plugins/Obsidian/dataset.csv plugins/Obsidian/model.dat
+   ```
+
+4. `/ob reload`. A `model.dat` in the data folder is loaded in preference to the bundled
+   one. The trainer prints training accuracy and log-loss so you can judge the fit.
+
 ## Configuration
 
-- `config.yml` — thresholds, decay half-life, punishment, integrations, exemptions
-- `checks.yml` — per-check tuning (all timings are post-compensation)
+- `config.yml` — thresholds, decay, punishment, integrations, exemptions, reach limits,
+  ping-stability gating
+- `checks.yml` — per-check tuning (all timings are post-compensation), plus the ML block
 - `messages.yml` — all user-facing text (MiniMessage)
 
 ## License

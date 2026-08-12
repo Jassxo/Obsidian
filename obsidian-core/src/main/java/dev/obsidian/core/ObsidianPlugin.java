@@ -12,6 +12,7 @@ import dev.obsidian.core.engine.ConfidenceEngine;
 import dev.obsidian.core.integration.DiscordWebhook;
 import dev.obsidian.core.integration.GrimBridge;
 import dev.obsidian.core.integration.PlaceholderHook;
+import dev.obsidian.core.integration.TotemGuardBridge;
 import dev.obsidian.core.lag.TpsMonitor;
 import dev.obsidian.core.ledger.Ledger;
 import dev.obsidian.core.packet.PacketIngestListener;
@@ -92,6 +93,9 @@ public final class ObsidianPlugin extends JavaPlugin {
 
         if (new GrimBridge(this).tryAttach()) {
             getLogger().info("GrimAC bridge attached (capped corroboration bonus).");
+        }
+        if (new TotemGuardBridge(this).tryAttach()) {
+            getLogger().info("TotemGuard bridge attached (capped corroboration bonus).");
         }
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new PlaceholderHook(this).register();
