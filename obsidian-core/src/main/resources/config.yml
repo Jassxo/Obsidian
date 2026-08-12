@@ -1,7 +1,7 @@
-# Obsidian - crystal PvP anticheat
+# Obsidian - PvP anticheat (crystal + general combat)
 # Detection is fully passive: nothing is ever cancelled, delayed or modified.
 # Do not edit config-version; it drives automatic migration.
-config-version: 1
+config-version: 2
 
 # Engine-wide settings. Per-check tuning lives in checks.yml.
 engine:
@@ -31,6 +31,28 @@ lag:
   post-teleport-grace-ms: 3000
   # ...and after respawn.
   post-respawn-grace-ms: 3000
+  # Connection stability. Stable high ping is fine (it compensates cleanly), but
+  # a jittery or spiking link makes the median compensation lag reality, so every
+  # check stands down until it settles. This is what keeps a laggy player from
+  # ever being flagged or punished for their connection.
+  #   - jitter above this (std-dev of the last 20 RTTs, ms) = unstable, skip.
+  max-ping-jitter-ms: 120
+  #   - a single RTT this much over the median counts as a spike...
+  ping-spike-threshold-ms: 150
+  #   - ...and checks keep standing down for this long after one.
+  ping-spike-grace-ms: 1500
+
+# Reach limits are facts about the game, not detector tuning, so they live here.
+# The reach check compares each hit against the limit for THAT hit, raised for a
+# high-reach weapon or creative mode so neither is ever a false flag.
+reach:
+  # Vanilla survival/adventure entity-attack reach.
+  survival-limit: 3.0
+  # Creative attack reach (also fully exempt by gamemode, this is belt-and-braces).
+  creative-limit: 5.0
+  # Allowed reach while holding a spear (high-reach weapon). Set to your server's
+  # spear reach; egregious values past this still flag, normal spear play does not.
+  spear-limit: 5.0
 
 exemptions:
   # Seconds after join during which a player is never evaluated.

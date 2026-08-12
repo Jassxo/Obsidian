@@ -120,6 +120,37 @@ public final class ConfigManager {
         return config.getDouble("lag.max-mspt", 65.0);
     }
 
+    // --- ping stability (spike / jitter gating) ---
+
+    /** Std-dev of the RTT window, in millis, above which the link is "unstable" and checks stand down. */
+    public int maxPingJitterMs() {
+        return config.getInt("lag.max-ping-jitter-ms", 120);
+    }
+
+    /** A single RTT this much above the median counts as a spike. */
+    public int pingSpikeThresholdMs() {
+        return config.getInt("lag.ping-spike-threshold-ms", 150);
+    }
+
+    /** How long after a spike checks keep standing down. */
+    public long pingSpikeGraceNanos() {
+        return config.getLong("lag.ping-spike-grace-ms", 1500) * 1_000_000L;
+    }
+
+    // --- reach limits (world facts consumed by the ingest layer) ---
+
+    public double reachSurvivalLimit() {
+        return config.getDouble("reach.survival-limit", 3.0);
+    }
+
+    public double reachCreativeLimit() {
+        return config.getDouble("reach.creative-limit", 5.0);
+    }
+
+    public double reachSpearLimit() {
+        return config.getDouble("reach.spear-limit", 5.0);
+    }
+
     public Set<String> exemptWorlds() {
         return exemptWorlds;
     }

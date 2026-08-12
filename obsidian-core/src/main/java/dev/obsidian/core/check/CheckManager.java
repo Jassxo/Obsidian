@@ -2,10 +2,16 @@ package dev.obsidian.core.check;
 
 import dev.obsidian.core.ObsidianPlugin;
 import dev.obsidian.core.check.impl.AimConsistencyCheck;
+import dev.obsidian.core.check.impl.AimSnapCheck;
 import dev.obsidian.core.check.impl.AnchorCycleCheck;
+import dev.obsidian.core.check.impl.AttackConsistencyCheck;
 import dev.obsidian.core.check.impl.GcdRotationCheck;
+import dev.obsidian.core.check.impl.HitWhileNotLookingCheck;
+import dev.obsidian.core.check.impl.MaceSmashCheck;
+import dev.obsidian.core.check.impl.MultiAuraCheck;
 import dev.obsidian.core.check.impl.OpportunityReactionCheck;
 import dev.obsidian.core.check.impl.PlaceBreakCycleCheck;
+import dev.obsidian.core.check.impl.ReachCheck;
 import dev.obsidian.core.check.impl.SnapRotationCheck;
 import dev.obsidian.core.check.impl.SpawnReactionCheck;
 import dev.obsidian.core.tracker.ActionRecord;
@@ -26,13 +32,21 @@ public final class CheckManager {
     public CheckManager(ObsidianPlugin plugin) {
         this.plugin = plugin;
         this.checks = new Check[]{
+                // crystal PvP (v1)
                 new SpawnReactionCheck(),
                 new PlaceBreakCycleCheck(),
                 new OpportunityReactionCheck(),
                 new AnchorCycleCheck(),
                 new SnapRotationCheck(),
                 new GcdRotationCheck(),
-                new AimConsistencyCheck()
+                new AimConsistencyCheck(),
+                // general combat (v2)
+                new ReachCheck(),
+                new HitWhileNotLookingCheck(),
+                new MultiAuraCheck(),
+                new AttackConsistencyCheck(),
+                new AimSnapCheck(),
+                new MaceSmashCheck()
         };
         for (int i = 0; i < checks.length; i++) {
             checks[i].wire(plugin.engine(), i);

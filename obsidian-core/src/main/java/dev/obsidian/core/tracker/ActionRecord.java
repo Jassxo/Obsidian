@@ -26,6 +26,12 @@ public final class ActionRecord {
      * laggy legit hit never reads as long-reach.
      */
     public double reachDistance = -1;
+    /**
+     * Effective allowed reach for this attack, in blocks: the vanilla limit
+     * raised for a high-reach weapon (spear) or creative mode, computed at ingest
+     * where the held item and gamemode are known. -1 when not applicable.
+     */
+    public double reachLimit = -1;
     /** True when the attacked entity was a player (PvP), for reach/aim gating. */
     public boolean targetIsPlayer;
     /** True when the attack was made with a mace in hand. */

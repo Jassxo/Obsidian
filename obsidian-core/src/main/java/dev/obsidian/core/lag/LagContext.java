@@ -12,19 +12,32 @@ public final class LagContext {
     private boolean recentTeleport;
     private boolean recentRespawn;
     private boolean serverLagging;
+    private boolean unstablePing;
 
     public void refresh(int pingMillis, double mspt, boolean recentTeleport,
-                        boolean recentRespawn, double maxMspt) {
+                        boolean recentRespawn, double maxMspt,
+                        boolean unstablePing) {
         this.pingMillis = pingMillis;
         this.mspt = mspt;
         this.recentTeleport = recentTeleport;
         this.recentRespawn = recentRespawn;
         this.serverLagging = mspt > maxMspt;
+        this.unstablePing = unstablePing;
     }
 
-    /** Checks must skip evaluation entirely when this is true. */
+    /**
+     * Checks must skip evaluation entirely when this is true. Beyond server lag,
+     * teleports and respawns, this also covers an unstable connection: a jittery
+     * link or a fresh ping spike means the median compensation lags reality, so
+     * we stand down rather than risk a false flag. Stable high ping is not
+     * unstable — it compensates cleanly and stays checkable.
+     */
     public boolean shouldSkip() {
-        return serverLagging || recentTeleport || recentRespawn;
+        return serverLagging || recentTeleport || recentRespawn || unstablePing;
+    }
+
+    public boolean unstablePing() {
+        return unstablePing;
     }
 
     public int pingMillis() {

@@ -8,7 +8,7 @@
 #
 # experimental checks self-disable if the engine exceeds its performance
 # budget, and should keep likelihood-ratio low.
-config-version: 1
+config-version: 2
 
 checks:
   spawn-reaction:
@@ -84,3 +84,66 @@ checks:
     # Chi-square style test on where attacks land on the crystal hitbox.
     # Needs many samples before it says anything at all.
     min-samples: 30
+
+  # --- general combat (v2) ---
+  # Reach limits themselves live in config.yml (reach:) because they are game
+  # facts; the values here are only the detector's statistics.
+  reach:
+    enabled: true
+    likelihood-ratio: 3.0
+    # Fallback limit if a per-attack limit was not resolved (blocks).
+    default-limit: 3.0
+    # A hit must exceed limit+slop to count as a violation.
+    slop: 0.1
+    # A single hit past limit+hard-slop gives a small immediate nudge.
+    hard-slop: 0.6
+    # Sustained-evidence window: this many recent hits before the ratio speaks.
+    sample-window: 20
+    min-violations: 4
+    violation-ratio: 0.45
+
+  hit-while-not-looking:
+    enabled: true
+    likelihood-ratio: 2.0
+    # Attacks landing more than this many degrees off the target center.
+    max-angle: 65.0
+    sample-window: 20
+    min-violations: 6
+    violation-ratio: 0.5
+
+  multi-aura:
+    enabled: true
+    likelihood-ratio: 3.0
+    # Hitting this many DISTINCT players inside the window is inhuman.
+    window-ms: 250
+    min-distinct-targets: 3
+
+  attack-consistency:
+    enabled: true
+    experimental: true
+    likelihood-ratio: 1.5
+    # Autoclicker signature on the in-combat click stream. Experimental: fast
+    # legit clickers (jitter/butterfly) are the false-positive source.
+    sample-window: 30
+    sigma-floor-ms: 12
+    autocorrelation-threshold: 0.9
+    # Consistency tells only apply while actually clicking fast (mean below this).
+    max-mean-ms: 300
+    # A sustained mean interval below this is an impossible rate outright.
+    min-interval-ms: 40
+    combat-window-seconds: 5
+
+  aim-snap:
+    enabled: true
+    likelihood-ratio: 2.0
+    # Snap-onto-player then mirror-return; same shape as crystal snap-rotation.
+    min-snap-degrees: 30.0
+
+  mace-smash:
+    enabled: true
+    likelihood-ratio: 2.5
+    # Machine-regular wind-charge -> mace-hit combo timing.
+    sample-window: 10
+    sigma-floor-ms: 30
+    autocorrelation-threshold: 0.9
+    max-interval-ms: 1500

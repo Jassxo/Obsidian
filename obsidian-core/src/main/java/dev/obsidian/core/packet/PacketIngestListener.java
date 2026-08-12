@@ -26,6 +26,7 @@ import dev.obsidian.core.tracker.ActionType;
 import dev.obsidian.core.tracker.CrystalTracker;
 import dev.obsidian.core.tracker.PlayerData;
 import dev.obsidian.core.tracker.TrackedEntity;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -52,6 +53,8 @@ public final class PacketIngestListener extends PacketListenerAbstract {
     // there, which simply means the mace/wind-charge paths stay dormant.
     private static final Material MACE = Material.getMaterial("MACE");
     private static final Material WIND_CHARGE = Material.getMaterial("WIND_CHARGE");
+    /** High-reach melee weapon; null on versions without it, so the path stays dormant. */
+    private static final Material SPEAR = Material.getMaterial("SPEAR");
 
     // Rough default hitbox for non-player entities we track; reach checks ignore
     // these (player targets only), so exactness here does not matter.
@@ -185,16 +188,19 @@ public final class PacketIngestListener extends PacketListenerAbstract {
         TrackedEntity target = data.entities.get(entityId);
         data.lastCombatNanos = now;
         boolean isPlayer = target != null && target.kind() == TrackedEntity.Kind.PLAYER;
-        boolean mace = MACE != null && mainHand(player) == MACE;
+        Material held = mainHand(player);
+        boolean mace = MACE != null && held == MACE;
         float angle = target == null ? -1f
                 : angleToPoint(player, data, target.centerX(), target.centerY(), target.centerZ());
         double reach = target == null ? -1 : reachTo(player, target, data, now);
+        double limit = effectiveReachLimit(player, held);
         double vy = data.verticalVelocity;
         ingest(data, player, ActionType.ENTITY_ATTACK, now, rec -> {
             rec.targetEntityId = entityId;
             rec.targetIsPlayer = isPlayer;
             rec.angleToTarget = angle;
             rec.reachDistance = reach;
+            rec.reachLimit = limit;
             rec.withMace = mace;
             rec.verticalVelocity = vy;
         });
@@ -314,12 +320,32 @@ public final class PacketIngestListener extends PacketListenerAbstract {
     }
 
     private void refreshLag(PlayerData data, long now) {
+        var cfg = plugin.configs();
         boolean recentTeleport = data.lastTeleportNanos > 0
-                && now - data.lastTeleportNanos < plugin.configs().postTeleportGraceNanos();
+                && now - data.lastTeleportNanos < cfg.postTeleportGraceNanos();
         boolean recentRespawn = data.lastRespawnNanos > 0
-                && now - data.lastRespawnNanos < plugin.configs().postRespawnGraceNanos();
+                && now - data.lastRespawnNanos < cfg.postRespawnGraceNanos();
+        data.ping.setSpikeThresholdMs(cfg.pingSpikeThresholdMs());
+        boolean unstablePing = data.ping.jitterMillis() > cfg.maxPingJitterMs()
+                || data.ping.spikedWithin(now, cfg.pingSpikeGraceNanos());
         data.lagContext.refresh(data.ping.medianPing(), plugin.tps().mspt(),
-                recentTeleport, recentRespawn, plugin.configs().maxMspt());
+                recentTeleport, recentRespawn, cfg.maxMspt(), unstablePing);
+    }
+
+    /**
+     * Allowed reach for an attack, raised above the vanilla limit for a spear
+     * (high-reach weapon) or creative mode, so neither becomes a false flag.
+     */
+    private double effectiveReachLimit(Player player, Material held) {
+        var cfg = plugin.configs();
+        double limit = cfg.reachSurvivalLimit();
+        if (SPEAR != null && held == SPEAR) {
+            limit = Math.max(limit, cfg.reachSpearLimit());
+        }
+        if (player.getGameMode() == GameMode.CREATIVE) {
+            limit = Math.max(limit, cfg.reachCreativeLimit());
+        }
+        return limit;
     }
 
     /** Track the player's own vertical velocity from position-bearing flying packets. */
