@@ -105,6 +105,13 @@ server, collect labelled data and retrain:
 4. `/ob reload`. A `model.dat` in the data folder is loaded in preference to the bundled
    one. The trainer prints training accuracy and log-loss so you can judge the fit.
 
+`/ob dataset` shows how many rows you have collected and how many are labelled.
+
+**Contributing data.** `dataset.csv` is a plain, human-readable file: a `timestamp`, a
+`label`, the `player`, then one named column per feature. If you would like to help
+improve the shared model, you are welcome to submit your labelled `dataset.csv` (open an
+issue or pull request). The trainer reads columns by name, so extra columns are fine.
+
 ## Configuration
 
 - `config.yml` — thresholds, decay, punishment, integrations, exemptions, reach limits,

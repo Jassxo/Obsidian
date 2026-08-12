@@ -42,8 +42,9 @@ public final class MlCheck extends Check {
 
     @Override
     protected void loadSettings(ConfigurationSection section) {
-        threshold = section.getDouble("threshold", 0.85);
-        windowActions = section.getInt("window-actions", 40);
+        // Clamp so a misconfigured value can never make the model spammy or unreachable.
+        threshold = Math.min(0.999, Math.max(0.5, section.getDouble("threshold", 0.85)));
+        windowActions = Math.max(10, section.getInt("window-actions", 40));
         datasetLogging = section.getBoolean("dataset-logging", false);
         angleViolationThreshold = section.getDouble("angle-violation-threshold", 65.0);
         reachSlop = section.getDouble("reach-slop", 0.1);

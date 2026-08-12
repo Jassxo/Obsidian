@@ -42,6 +42,7 @@ public final class ObCommand implements TabExecutor {
             case "debug" -> debug(sender, args);
             case "label" -> label(sender, args);
             case "ml" -> ml(sender);
+            case "dataset" -> dataset(sender);
             case "reload" -> reload(sender);
             case "export" -> export(sender, args);
             case "stats" -> stats(sender);
@@ -84,6 +85,22 @@ public final class ObCommand implements TabExecutor {
         sender.sendMessage(plugin.messages().render("commands.ml-status",
                 Placeholder.unparsed("model", mlCheck.modelId()),
                 Placeholder.unparsed("logging", mlCheck.datasetLogging() ? "on" : "off")));
+    }
+
+    /** /ob dataset — how much labelled ML data has been collected, and where. */
+    private void dataset(CommandSender sender) {
+        java.io.File file = new java.io.File(plugin.getDataFolder(),
+                dev.obsidian.core.ml.DatasetLogger.FILE_NAME);
+        plugin.scheduler().runAsync(() -> {
+            var stats = dev.obsidian.core.ml.DatasetLogger.stats(file);
+            sender.sendMessage(plugin.messages().render("commands.dataset",
+                    Placeholder.unparsed("total", String.valueOf(stats.total())),
+                    Placeholder.unparsed("labelled", String.valueOf(stats.labelled())),
+                    Placeholder.unparsed("cheat", String.valueOf(stats.cheat())),
+                    Placeholder.unparsed("legit", String.valueOf(stats.legit()))));
+            sender.sendMessage(plugin.messages().render("commands.dataset-file",
+                    Placeholder.unparsed("file", file.getName())));
+        });
     }
 
     private void alerts(CommandSender sender) {
@@ -218,7 +235,7 @@ public final class ObCommand implements TabExecutor {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Stream.of("alerts", "check", "history", "debug", "label", "ml", "reload", "export", "stats")
+            return Stream.of("alerts", "check", "history", "debug", "label", "ml", "dataset", "reload", "export", "stats")
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .toList();
         }

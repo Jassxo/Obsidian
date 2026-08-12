@@ -92,38 +92,96 @@ public final class LogisticTrainer {
 
     private static void read(String path, List<double[]> x, List<Integer> y) throws IOException {
         try (BufferedReader r = new BufferedReader(new FileReader(path))) {
-            String line;
-            boolean header = true;
-            while ((line = r.readLine()) != null) {
+            String first = r.readLine();
+            if (first == null) {
+                return;
+            }
+            // Resolve columns from the header by name, so the file can carry extra
+            // columns (timestamp, player, ...) in any order and still train.
+            int labelCol = 0;
+            int[] featureCols = defaultFeatureColumns();
+            boolean hasHeader = first.contains("label");
+            if (hasHeader) {
+                String[] cols = first.split(",");
+                labelCol = indexOf(cols, "label");
+                for (int j = 0; j < Features.COUNT; j++) {
+                    featureCols[j] = indexOf(cols, Features.NAMES[j]);
+                }
+                if (labelCol < 0 || hasMissing(featureCols)) {
+                    throw new IOException("header is missing the label or a feature column");
+                }
+            }
+
+            String line = hasHeader ? r.readLine() : first;
+            for (; line != null; line = r.readLine()) {
                 if (line.isBlank()) {
                     continue;
                 }
-                if (header) {
-                    header = false;
-                    if (line.startsWith("label,")) {
-                        continue;
-                    }
-                }
                 String[] parts = line.split(",");
-                if (parts.length < 2 + Features.COUNT) {
+                int need = Math.max(labelCol, max(featureCols));
+                if (parts.length <= need) {
                     continue;
                 }
                 int label;
-                if (parts[0].equalsIgnoreCase("cheat")) {
+                String raw = parts[labelCol].trim();
+                if (raw.equalsIgnoreCase("cheat")) {
                     label = 1;
-                } else if (parts[0].equalsIgnoreCase("legit")) {
+                } else if (raw.equalsIgnoreCase("legit")) {
                     label = 0;
                 } else {
                     continue; // unlabelled row, skip
                 }
                 double[] f = new double[Features.COUNT];
+                boolean ok = true;
                 for (int j = 0; j < Features.COUNT; j++) {
-                    f[j] = Double.parseDouble(parts[2 + j].trim());
+                    try {
+                        f[j] = Double.parseDouble(parts[featureCols[j]].trim());
+                    } catch (NumberFormatException e) {
+                        ok = false;
+                        break;
+                    }
                 }
-                x.add(f);
-                y.add(label);
+                if (ok) {
+                    x.add(f);
+                    y.add(label);
+                }
             }
         }
+    }
+
+    private static int[] defaultFeatureColumns() {
+        // Legacy headerless layout: label,player,f0..f9
+        int[] cols = new int[Features.COUNT];
+        for (int j = 0; j < Features.COUNT; j++) {
+            cols[j] = 2 + j;
+        }
+        return cols;
+    }
+
+    private static int indexOf(String[] cols, String name) {
+        for (int i = 0; i < cols.length; i++) {
+            if (cols[i].trim().equalsIgnoreCase(name)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean hasMissing(int[] cols) {
+        for (int c : cols) {
+            if (c < 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int max(int[] a) {
+        int m = a[0];
+        for (int v : a) {
+            m = Math.max(m, v);
+        }
+        return m;
     }
 
     private static void standardizeStats(List<double[]> x, double[] mean, double[] scale) {
