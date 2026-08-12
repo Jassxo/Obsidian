@@ -107,10 +107,11 @@ server, collect labelled data and retrain:
 
 `/ob dataset` shows how many rows you have collected and how many are labelled.
 
-**Contributing data.** `dataset.csv` is a plain, human-readable file: a `timestamp`, a
-`label`, the `player`, then one named column per feature. If you would like to help
-improve the shared model, you are welcome to submit your labelled `dataset.csv` (open an
-issue or pull request). The trainer reads columns by name, so extra columns are fine.
+**Contributing data.** `dataset.csv` is a structured file: a `timestamp`, a `label`, the
+`player`, then one named column per feature. If you would like to help improve the shared
+model, you can send your labelled `dataset.csv` **directly to the project maintainer**
+(privately — not a public post), and it will be folded into the next model release. The
+trainer reads columns by name, so extra columns are fine.
 
 ## Configuration
 
