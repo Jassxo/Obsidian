@@ -98,9 +98,28 @@
                                     <includes><include>**</include></includes>
                                 </filter>
                                 <filter>
-                                    <!-- JDBC drivers and pools are loaded reflectively; never minimize them away. -->
+                                    <!-- JDBC drivers and pools are loaded reflectively; never minimize them away.
+                                         sqlite-jdbc ships a ~1MB native library for every OS/arch on earth
+                                         (23 of them, ~24MB). Keep only the platforms real Minecraft servers
+                                         run on and drop the rest; this alone takes the jar from ~16MB to ~5MB.
+                                         Kept: Linux x86_64/aarch64, Linux-Musl x86_64 (Alpine/Docker),
+                                         Windows x86_64, macOS x86_64/aarch64. -->
                                     <artifact>org.xerial:sqlite-jdbc</artifact>
                                     <includes><include>**</include></includes>
+                                    <excludes>
+                                        <exclude>org/sqlite/native/FreeBSD/**</exclude>
+                                        <exclude>org/sqlite/native/Linux-Android/**</exclude>
+                                        <exclude>org/sqlite/native/Linux-Musl/aarch64/**</exclude>
+                                        <exclude>org/sqlite/native/Linux-Musl/x86/**</exclude>
+                                        <exclude>org/sqlite/native/Linux/arm/**</exclude>
+                                        <exclude>org/sqlite/native/Linux/armv6/**</exclude>
+                                        <exclude>org/sqlite/native/Linux/armv7/**</exclude>
+                                        <exclude>org/sqlite/native/Linux/ppc64/**</exclude>
+                                        <exclude>org/sqlite/native/Linux/x86/**</exclude>
+                                        <exclude>org/sqlite/native/Windows/aarch64/**</exclude>
+                                        <exclude>org/sqlite/native/Windows/armv7/**</exclude>
+                                        <exclude>org/sqlite/native/Windows/x86/**</exclude>
+                                    </excludes>
                                 </filter>
                                 <filter>
                                     <artifact>com.zaxxer:HikariCP</artifact>
