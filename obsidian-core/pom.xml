@@ -91,6 +91,13 @@
                             <minimizeJar>true</minimizeJar>
                             <filters>
                                 <filter>
+                                    <!-- Caffeine picks its cache implementation class by reflection
+                                         (SSMSW, SSLMS, ...); minimize would strip those and enable
+                                         would crash with ClassNotFoundException. Keep it whole. -->
+                                    <artifact>com.github.ben-manes.caffeine:caffeine</artifact>
+                                    <includes><include>**</include></includes>
+                                </filter>
+                                <filter>
                                     <!-- JDBC drivers and pools are loaded reflectively; never minimize them away. -->
                                     <artifact>org.xerial:sqlite-jdbc</artifact>
                                     <includes><include>**</include></includes>
