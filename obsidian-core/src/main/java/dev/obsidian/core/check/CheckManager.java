@@ -5,6 +5,8 @@ import dev.obsidian.core.check.impl.AimConsistencyCheck;
 import dev.obsidian.core.check.impl.AimSnapCheck;
 import dev.obsidian.core.check.impl.AnchorCycleCheck;
 import dev.obsidian.core.check.impl.AttackConsistencyCheck;
+import dev.obsidian.core.check.impl.BadPacketsCheck;
+import dev.obsidian.core.check.impl.FakeCriticalsCheck;
 import dev.obsidian.core.check.impl.GcdRotationCheck;
 import dev.obsidian.core.check.impl.HitWhileNotLookingCheck;
 import dev.obsidian.core.check.impl.MaceSmashCheck;
@@ -14,6 +16,7 @@ import dev.obsidian.core.check.impl.PlaceBreakCycleCheck;
 import dev.obsidian.core.check.impl.ReachCheck;
 import dev.obsidian.core.check.impl.SnapRotationCheck;
 import dev.obsidian.core.check.impl.SpawnReactionCheck;
+import dev.obsidian.core.check.impl.TimerCheck;
 import dev.obsidian.core.ml.MlCheck;
 import dev.obsidian.core.tracker.ActionRecord;
 import dev.obsidian.core.tracker.PlayerData;
@@ -50,6 +53,9 @@ public final class CheckManager {
                 new AttackConsistencyCheck(),
                 new AimSnapCheck(),
                 new MaceSmashCheck(),
+                new BadPacketsCheck(),
+                new FakeCriticalsCheck(),
+                new TimerCheck(),
                 // corroborating machine-learning layer (v2)
                 mlCheck
         };

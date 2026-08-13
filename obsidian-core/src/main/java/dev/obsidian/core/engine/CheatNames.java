@@ -9,15 +9,18 @@ import java.util.Map;
  */
 public final class CheatNames {
 
-    private static final Map<String, String> DISPLAY = Map.of(
-            "autocrystal", "AutoCrystal",
-            "autoanchor", "AutoAnchor",
-            "aim", "Aimbot / Aim Assist",
-            "killaura", "Killaura",
-            "reach", "Reach",
-            "autoclicker", "AutoClicker",
-            "mace", "Auto Mace",
-            "ml", "Anomaly (ML)"
+    private static final Map<String, String> DISPLAY = Map.ofEntries(
+            Map.entry("autocrystal", "AutoCrystal"),
+            Map.entry("autoanchor", "AutoAnchor"),
+            Map.entry("aim", "Aimbot / Aim Assist"),
+            Map.entry("killaura", "Killaura"),
+            Map.entry("reach", "Reach"),
+            Map.entry("autoclicker", "AutoClicker"),
+            Map.entry("mace", "Auto Mace"),
+            Map.entry("badpackets", "Bad Packets"),
+            Map.entry("criticals", "Criticals"),
+            Map.entry("timer", "Timer"),
+            Map.entry("ml", "Anomaly (ML)")
     );
 
     private CheatNames() {

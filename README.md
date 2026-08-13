@@ -22,6 +22,16 @@ guiding principle is simple: **a missed signal is recoverable, a false flag is n
 - **Autoclicker** — machine-regular click intervals during combat
 - **Aim assist / aimbot** — snap-onto-target then mirror-return flicks
 - **Auto-mace** — machine-timed wind-charge → mace-smash combos
+- **Fake criticals** — hits landing during an artificial "crit hop"
+
+**Protocol & movement**
+- **Bad packets** — rotations a vanilla client cannot send (pitch outside ±90°, NaN)
+- **Timer** — movement packets arriving faster than the 20 tps client cadence
+
+Detections are grouped into families, and a flag names the **predicted cheat**
+(Killaura, Reach, AutoClicker, Timer, …). A flag needs agreement from **two
+independent families** before it fires — no single check, and no single timing
+measurement, can convict on its own.
 
 **Machine learning** — a lightweight logistic model scores each window of combat over
 engineered features and adds one corroborating signal when several agree. It is pure

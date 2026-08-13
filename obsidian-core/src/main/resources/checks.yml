@@ -148,6 +148,33 @@ checks:
     autocorrelation-threshold: 0.9
     max-interval-ms: 1500
 
+  bad-packets:
+    enabled: true
+    likelihood-ratio: 3.0
+    # Rotations a vanilla client cannot send (pitch outside +/-90, NaN). A hard
+    # protocol violation, independent of timing. Strong but single-family, so the
+    # corroboration gate still asks for a second detection before it flags.
+    strength: 0.85
+
+  fake-criticals:
+    enabled: true
+    experimental: true
+    likelihood-ratio: 1.6
+    # Sustained fraction of hits landing during a tiny artificial "crit hop"
+    # (upward velocity far below a real jump). Experimental: distribution-based.
+    min-hop-velocity: 0.02
+    max-hop-velocity: 0.20
+    sample-window: 25
+    hop-ratio-threshold: 0.65
+
+  timer:
+    enabled: true
+    likelihood-ratio: 2.0
+    # Movement packets arriving faster than the 20 tps cadence (client running
+    # fast). Balance of the surplus over 50ms/packet; sustained surplus = timer.
+    balance-limit-ms: 160.0
+    balance-clamp-ms: 1000.0
+
   # Machine-learning layer. It scores a window of combat with the logistic model
   # (model.dat) and adds ONE corroborating signal when the score clears the
   # threshold. It never convicts alone: experimental, low weight, and it stands
