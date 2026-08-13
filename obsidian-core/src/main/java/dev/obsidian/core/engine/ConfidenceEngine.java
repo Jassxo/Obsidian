@@ -8,7 +8,10 @@ import dev.obsidian.core.ObsidianPlugin;
 import dev.obsidian.core.check.Check;
 import dev.obsidian.core.tracker.PlayerData;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -83,7 +86,8 @@ public final class ConfidenceEngine {
             return;
         }
         data.lastSuspiciousAlertNanos = now;
-        plugin.alerts().sendSuspicious(data, confidence);
+        String cheat = predictCheat(data.suspicion.signalSnapshot());
+        plugin.alerts().sendSuspicious(data, cheat, confidence);
     }
 
     private void maybeFlag(PlayerData data, double confidence, long now) {
@@ -91,15 +95,27 @@ public final class ConfidenceEngine {
                 && now - data.lastFlagNanos < FLAG_COOLDOWN_NANOS) {
             return;
         }
-        data.lastFlagNanos = now;
 
         List<Signal> signals = data.suspicion.signalSnapshot();
+
+        // Corroboration gate: a flag needs evidence from several independent
+        // detection families, not one check firing repeatedly. This is what keeps
+        // a single timing/speed measurement from ever convicting on its own. Below
+        // the bar we hold the player at "suspicious" and keep watching.
+        Set<String> categories = recentCategories(signals);
+        if (categories.size() < plugin.configs().flagMinCategories()) {
+            maybeSuspicious(data, confidence, now);
+            return;
+        }
+
+        data.lastFlagNanos = now;
+        String cheat = predictCheat(signals);
         int ping = data.ping.medianPing();
         double mspt = data.lagContext.mspt();
 
-        plugin.alerts().sendFlag(data, confidence, signals);
+        plugin.alerts().sendFlag(data, cheat, confidence, signals);
         plugin.ledger().writeFlagAsync(data, confidence, signals, ping, mspt);
-        plugin.webhook().sendFlagAsync(data.name(), confidence, signals, ping, mspt);
+        plugin.webhook().sendFlagAsync(data.name(), cheat, confidence, signals, ping, mspt);
 
         for (FlagListener listener : flagListeners) {
             try {
@@ -116,6 +132,60 @@ public final class ConfidenceEngine {
                     plugin.getServer().getConsoleSender(),
                     plugin.configs().punishmentCommand().replace("%player%", data.name())));
         }
+    }
+
+    /** Distinct check categories that produced a signal inside the corroboration window. */
+    private Set<String> recentCategories(List<Signal> signals) {
+        long cutoff = System.currentTimeMillis() - plugin.configs().flagCorroborationWindowMillis();
+        Set<String> categories = new HashSet<>();
+        for (Signal signal : signals) {
+            if (signal.timestampMillis() < cutoff) {
+                continue;
+            }
+            String category = plugin.checkManager().category(signal.checkId());
+            if (category != null) {
+                categories.add(category);
+            }
+        }
+        return categories;
+    }
+
+    /**
+     * Names the most likely cheat from the recent signals: the category carrying
+     * the most evidence. A concrete deterministic family is preferred over the
+     * generic ML anomaly, so a flag reads "Killaura", not "Anomaly", when a real
+     * check drove it.
+     */
+    private String predictCheat(List<Signal> signals) {
+        long cutoff = System.currentTimeMillis() - plugin.configs().flagCorroborationWindowMillis();
+        Map<String, Double> weight = new HashMap<>();
+        for (Signal signal : signals) {
+            if (signal.timestampMillis() < cutoff) {
+                continue;
+            }
+            String category = plugin.checkManager().category(signal.checkId());
+            if (category != null) {
+                weight.merge(category, signal.strength(), Double::sum);
+            }
+        }
+        String best = null;
+        double bestWeight = -1;
+        String bestDeterministic = null;
+        double bestDeterministicWeight = -1;
+        for (Map.Entry<String, Double> entry : weight.entrySet()) {
+            if (entry.getValue() > bestWeight) {
+                bestWeight = entry.getValue();
+                best = entry.getKey();
+            }
+            if (!CheatNames.isCorroborationOnly(entry.getKey())
+                    && entry.getValue() > bestDeterministicWeight) {
+                bestDeterministicWeight = entry.getValue();
+                bestDeterministic = entry.getKey();
+            }
+        }
+        String chosen = best != null && CheatNames.isCorroborationOnly(best) && bestDeterministic != null
+                ? bestDeterministic : best;
+        return CheatNames.displayFor(chosen);
     }
 
     private void fireSignalEvent(PlayerData data, Signal signal, double confidence) {

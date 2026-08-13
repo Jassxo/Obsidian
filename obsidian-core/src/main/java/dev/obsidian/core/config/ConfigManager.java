@@ -110,6 +110,21 @@ public final class ConfigManager {
         return config.getDouble("engine.baseline-max-confidence", 20.0);
     }
 
+    /**
+     * Distinct detection categories that must have fired before a player can be
+     * flagged. 2 means no single check family (e.g. one timing check) ever
+     * convicts alone; below the bar the player stays at "suspicious". Set to 1 to
+     * restore single-detection flagging.
+     */
+    public int flagMinCategories() {
+        return Math.max(1, config.getInt("engine.flag-min-categories", 2));
+    }
+
+    /** How far back the corroboration + cheat-prediction look for distinct categories. */
+    public long flagCorroborationWindowMillis() {
+        return config.getLong("engine.flag-corroboration-window-seconds", 90) * 1000L;
+    }
+
     public boolean adaptiveThresholds() {
         return config.getBoolean("engine.adaptive-thresholds", false);
     }

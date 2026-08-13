@@ -1,12 +1,12 @@
 # All player-facing text. MiniMessage format.
-config-version: 2
+config-version: 3
 
 prefix: "<gradient:#FF6EC7:#B44CF0>Obsidian</gradient> <dark_gray>»</dark_gray> "
 
 alerts:
-  flag: "<prefix><light_purple><player></light_purple> <gray>flagged crystal cheats</gray> <white><confidence>%</white> <gray>ping <ping>ms mspt <mspt></gray>"
-  flag-hover: "<gray>Top signals:\n<signals>\n<yellow>Click to teleport</yellow>"
-  suspicious: "<prefix><light_purple><player></light_purple> <gray>is suspicious</gray> <white><confidence>%</white>"
+  flag: "<prefix><light_purple><player></light_purple> <gray>flagged</gray> <red><cheat></red> <white><confidence>%</white> <gray>ping <ping>ms mspt <mspt></gray>"
+  flag-hover: "<gray>Predicted: <white><cheat></white>\nTop signals:\n<signals>\n<yellow>Click to teleport</yellow>"
+  suspicious: "<prefix><light_purple><player></light_purple> <gray>looks like</gray> <yellow><cheat></yellow> <white><confidence>%</white>"
   toggled-on: "<prefix><green>Alerts enabled.</green>"
   toggled-off: "<prefix><red>Alerts disabled.</red>"
 

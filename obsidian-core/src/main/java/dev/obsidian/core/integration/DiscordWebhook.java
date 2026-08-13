@@ -25,7 +25,7 @@ public final class DiscordWebhook {
         this.plugin = plugin;
     }
 
-    public void sendFlagAsync(String playerName, double confidence, List<Signal> signals,
+    public void sendFlagAsync(String playerName, String cheat, double confidence, List<Signal> signals,
                               int ping, double mspt) {
         if (!plugin.configs().webhookEnabled()) {
             return;
@@ -51,8 +51,8 @@ public final class DiscordWebhook {
         String json = "{\"embeds\":[{"
                 + "\"title\":\"Obsidian flag: " + escape(playerName) + "\","
                 + "\"color\":11815152,"
-                + "\"description\":\"Confidence **" + Math.round(confidence) + "%** | ping "
-                + ping + "ms | mspt " + Math.round(mspt) + "\","
+                + "\"description\":\"Predicted **" + escape(cheat) + "** | confidence **"
+                + Math.round(confidence) + "%** | ping " + ping + "ms | mspt " + Math.round(mspt) + "\","
                 + "\"fields\":[" + fields + "]}]}";
 
         HttpRequest request = HttpRequest.newBuilder(URI.create(url))

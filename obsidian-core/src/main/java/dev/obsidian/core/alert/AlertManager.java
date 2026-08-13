@@ -47,7 +47,7 @@ public final class AlertManager {
         }
     }
 
-    public void sendFlag(PlayerData data, double confidence, List<Signal> signals) {
+    public void sendFlag(PlayerData data, String cheat, double confidence, List<Signal> signals) {
         StringBuilder top = new StringBuilder();
         int shown = 0;
         for (Signal signal : signals) {
@@ -60,9 +60,11 @@ public final class AlertManager {
             top.append(signal.checkId()).append(": ").append(signal.evidence());
         }
         Component hover = plugin.messages().render("alerts.flag-hover",
+                Placeholder.unparsed("cheat", cheat),
                 Placeholder.unparsed("signals", top.toString()));
         Component message = plugin.messages().render("alerts.flag",
                         Placeholder.unparsed("player", data.name()),
+                        Placeholder.unparsed("cheat", cheat),
                         Placeholder.unparsed("confidence", String.valueOf(Math.round(confidence))),
                         Placeholder.unparsed("ping", String.valueOf(data.ping.medianPing())),
                         Placeholder.unparsed("mspt", String.valueOf(Math.round(data.lagContext.mspt()))))
@@ -71,9 +73,10 @@ public final class AlertManager {
         broadcast(message);
     }
 
-    public void sendSuspicious(PlayerData data, double confidence) {
+    public void sendSuspicious(PlayerData data, String cheat, double confidence) {
         broadcast(plugin.messages().render("alerts.suspicious",
                 Placeholder.unparsed("player", data.name()),
+                Placeholder.unparsed("cheat", cheat),
                 Placeholder.unparsed("confidence", String.valueOf(Math.round(confidence)))));
     }
 

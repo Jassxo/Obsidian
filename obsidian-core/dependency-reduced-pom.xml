@@ -29,10 +29,30 @@
               <minimizeJar>true</minimizeJar>
               <filters>
                 <filter>
+                  <artifact>com.github.ben-manes.caffeine:caffeine</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
                   <artifact>org.xerial:sqlite-jdbc</artifact>
                   <includes>
                     <include>**</include>
                   </includes>
+                  <excludes>
+                    <exclude>org/sqlite/native/FreeBSD/**</exclude>
+                    <exclude>org/sqlite/native/Linux-Android/**</exclude>
+                    <exclude>org/sqlite/native/Linux-Musl/aarch64/**</exclude>
+                    <exclude>org/sqlite/native/Linux-Musl/x86/**</exclude>
+                    <exclude>org/sqlite/native/Linux/arm/**</exclude>
+                    <exclude>org/sqlite/native/Linux/armv6/**</exclude>
+                    <exclude>org/sqlite/native/Linux/armv7/**</exclude>
+                    <exclude>org/sqlite/native/Linux/ppc64/**</exclude>
+                    <exclude>org/sqlite/native/Linux/x86/**</exclude>
+                    <exclude>org/sqlite/native/Windows/aarch64/**</exclude>
+                    <exclude>org/sqlite/native/Windows/armv7/**</exclude>
+                    <exclude>org/sqlite/native/Windows/x86/**</exclude>
+                  </excludes>
                 </filter>
                 <filter>
                   <artifact>com.zaxxer:HikariCP</artifact>

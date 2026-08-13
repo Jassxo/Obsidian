@@ -76,6 +76,16 @@ public final class CheckManager {
         return mlCheck;
     }
 
+    /** Category of the check with this id (e.g. "reach", "killaura"), or null. */
+    public String category(String checkId) {
+        for (Check check : checks) {
+            if (check.id().equals(checkId)) {
+                return check.category();
+            }
+        }
+        return null;
+    }
+
     public void shutdown() {
         mlCheck.shutdown();
     }

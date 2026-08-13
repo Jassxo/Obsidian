@@ -1,7 +1,7 @@
 # Obsidian - PvP anticheat (crystal + general combat)
 # Detection is fully passive: nothing is ever cancelled, delayed or modified.
 # Do not edit config-version; it drives automatic migration.
-config-version: 2
+config-version: 3
 
 # Engine-wide settings. Per-check tuning lives in checks.yml.
 engine:
@@ -18,6 +18,14 @@ engine:
   # Players below this confidence for their whole session feed the server-wide
   # legit baseline distributions.
   baseline-max-confidence: 20.0
+  # Corroboration: how many DISTINCT detection families (reach, killaura, aim,
+  # autocrystal, ...) must have fired before a player can be flagged. 2 means no
+  # single check — and no single timing/speed measurement — ever convicts alone;
+  # until a second family agrees the player is only shown as "suspicious". This is
+  # the main guard against false flags. Set to 1 for the old single-detection behaviour.
+  flag-min-categories: 2
+  # How far back the corroboration check and the predicted-cheat name look.
+  flag-corroboration-window-seconds: 90
   # Optional: let baseline drift tighten/loosen thresholds by at most 10%.
   # Every adjustment is logged. Leave off unless you know why you want it.
   adaptive-thresholds: false
